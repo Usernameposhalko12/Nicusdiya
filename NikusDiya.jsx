@@ -1,0 +1,1793 @@
+// НікусДія — повноцінний застосунок
+// Firebase config: замінити на свій проект!
+// GitHub Pages: додати firebaseConfig у верхній секції
+
+import { useState, useEffect, useRef } from "react";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc,
+  updateDoc,
+  collection,
+  addDoc,
+  query,
+  where,
+  orderBy,
+  getDocs,
+  onSnapshot,
+  serverTimestamp,
+  deleteDoc,
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// ══════════════════════════════════════════
+//  🔥 FIREBASE CONFIG — замінити на свій!
+// ══════════════════════════════════════════
+
+
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyAZXG_yy0MOHrzqAI9vqSsHGA7GjrMbEJk",
+  authDomain: "nikus-diya.firebaseapp.com",
+  projectId: "nikus-diya",
+  storageBucket: "nikus-diya.firebasestorage.app",
+  messagingSenderId: "1026936231794",
+  appId: "1:1026936231794:web:7198b8bdf69c41eb38efeb"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+
+const ADMIN_EMAIL = "usernameposhalko6@gmail.com"; // Змінити на пошту адміна
+
+const auth = getAuth(app);
+const db = getFirestore(app);
+const googleProvider = new GoogleAuthProvider();
+
+// ══════════════════════════════════════════
+//  STYLES
+// ══════════════════════════════════════════
+const css = `
+  @import url('https://fonts.googleapis.com/css2?family=e-Ukraine:wght@300;400;500;700&family=Unbounded:wght@400;600;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=Raleway:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --ua-blue: #005BBB;
+    --ua-yellow: #FFD700;
+    --ua-yellow-light: #FFF3B0;
+    --bg: #F0F4FF;
+    --bg2: #E8EDF8;
+    --card: #FFFFFF;
+    --text: #0D1B2A;
+    --text2: #4A5568;
+    --accent: #005BBB;
+    --accent2: #0073E6;
+    --danger: #E53E3E;
+    --success: #38A169;
+    --border: #D0DAF0;
+    --shadow: 0 4px 24px rgba(0,91,187,0.10);
+    --shadow-lg: 0 12px 48px rgba(0,91,187,0.18);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Raleway', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  .app-wrap {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    background: var(--bg);
+    position: relative;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(135deg, #003F8A 0%, #005BBB 60%, #0073E6 100%);
+    padding: 16px 20px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 20px rgba(0,63,138,0.4);
+  }
+
+  .header-logo {
+    width: 38px;
+    height: 38px;
+    background: var(--ua-yellow);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--ua-blue);
+    letter-spacing: -0.5px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(255,215,0,0.4);
+  }
+
+  .header-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: -0.3px;
+  }
+
+  .header-sub {
+    font-size: 10px;
+    color: rgba(255,255,255,0.65);
+    font-weight: 400;
+    margin-top: 1px;
+    letter-spacing: 0.5px;
+  }
+
+  .header-logout {
+    margin-left: auto;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: white;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: 'Raleway', sans-serif;
+    font-weight: 600;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+  .header-logout:hover { background: rgba(255,255,255,0.25); }
+
+  /* ── AUTH ── */
+  .auth-page {
+    min-height: 100vh;
+    background: linear-gradient(160deg, #003F8A 0%, #005BBB 45%, #0099CC 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .auth-page::before {
+    content: '';
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    background: var(--ua-yellow);
+    opacity: 0.06;
+    border-radius: 50%;
+    top: -100px;
+    right: -100px;
+  }
+
+  .auth-page::after {
+    content: '';
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    background: white;
+    opacity: 0.04;
+    border-radius: 50%;
+    bottom: -80px;
+    left: -80px;
+  }
+
+  .auth-logo-big {
+    width: 80px;
+    height: 80px;
+    background: var(--ua-yellow);
+    border-radius: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: #003F8A;
+    margin-bottom: 12px;
+    box-shadow: 0 8px 32px rgba(255,215,0,0.5);
+    position: relative;
+    z-index: 1;
+  }
+
+  .auth-title-big {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    color: white;
+    letter-spacing: -1px;
+    margin-bottom: 6px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .auth-subtitle {
+    font-size: 13px;
+    color: rgba(255,255,255,0.65);
+    margin-bottom: 32px;
+    position: relative;
+    z-index: 1;
+    text-align: center;
+  }
+
+  .auth-card {
+    background: white;
+    border-radius: 24px;
+    padding: 28px 24px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.3);
+    position: relative;
+    z-index: 1;
+  }
+
+  .auth-tabs {
+    display: flex;
+    background: var(--bg2);
+    border-radius: 10px;
+    padding: 3px;
+    margin-bottom: 24px;
+  }
+
+  .auth-tab {
+    flex: 1;
+    padding: 9px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text2);
+    font-family: 'Raleway', sans-serif;
+    transition: all 0.2s;
+  }
+
+  .auth-tab.active {
+    background: white;
+    color: var(--accent);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .input-group {
+    margin-bottom: 16px;
+  }
+
+  .input-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text2);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .input-field {
+    width: 100%;
+    padding: 13px 16px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-family: 'Raleway', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    transition: border-color 0.2s;
+    outline: none;
+  }
+
+  .input-field:focus {
+    border-color: var(--accent);
+    background: white;
+  }
+
+  .btn-primary {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(135deg, #003F8A, #005BBB);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Raleway', sans-serif;
+    letter-spacing: 0.3px;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 4px 16px rgba(0,91,187,0.4);
+  }
+
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,91,187,0.5); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  .btn-google {
+    width: 100%;
+    padding: 13px;
+    background: white;
+    color: var(--text);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Raleway', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 12px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .btn-google:hover { border-color: #4285F4; background: #F8F9FF; }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 16px 0;
+    color: var(--text2);
+    font-size: 12px;
+  }
+
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .error-msg {
+    background: #FFF5F5;
+    border: 1px solid #FEB2B2;
+    color: var(--danger);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+
+  /* ── PROFILE SETUP ── */
+  .setup-page {
+    padding: 24px 20px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .setup-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  .setup-sub {
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 28px;
+    line-height: 1.5;
+  }
+
+  .photo-upload {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+
+  .photo-circle {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 3px dashed var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    overflow: hidden;
+    background: var(--bg2);
+    transition: border-color 0.2s;
+    position: relative;
+  }
+
+  .photo-circle:hover { border-color: var(--accent); }
+
+  .photo-circle img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .photo-hint {
+    font-size: 12px;
+    color: var(--text2);
+    margin-top: 8px;
+    text-align: center;
+  }
+
+  /* ── MAIN TABS ── */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+    background: white;
+    border-top: 1px solid var(--border);
+    display: flex;
+    z-index: 100;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+  }
+
+  .nav-item {
+    flex: 1;
+    padding: 10px 4px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--text2);
+    font-size: 10px;
+    font-family: 'Raleway', sans-serif;
+    font-weight: 600;
+    transition: color 0.2s;
+  }
+
+  .nav-item.active { color: var(--accent); }
+
+  .nav-icon {
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  .page-content {
+    padding: 20px;
+    padding-bottom: 90px;
+  }
+
+  /* ── ID CARD ── */
+  .id-card {
+    background: linear-gradient(135deg, #003F8A 0%, #005BBB 50%, #0073E6 100%);
+    border-radius: 22px;
+    padding: 24px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-lg);
+    min-height: 200px;
+  }
+
+  .id-card::before {
+    content: '';
+    position: absolute;
+    width: 250px;
+    height: 250px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 50%;
+    top: -80px;
+    right: -60px;
+  }
+
+  .id-card::after {
+    content: '';
+    position: absolute;
+    width: 180px;
+    height: 180px;
+    background: rgba(255,215,0,0.08);
+    border-radius: 50%;
+    bottom: -60px;
+    left: -40px;
+  }
+
+  .id-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .id-flag {
+    width: 32px;
+    height: 20px;
+    border-radius: 3px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+
+  .id-flag-top { flex: 1; background: #005BBB; }
+  .id-flag-bottom { flex: 1; background: #FFD700; }
+
+  .id-card-app-name {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.9);
+    letter-spacing: 0.5px;
+  }
+
+  .id-card-doc-type {
+    font-size: 10px;
+    color: rgba(255,255,255,0.55);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 1px;
+  }
+
+  .id-card-body {
+    display: flex;
+    gap: 18px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .id-photo {
+    width: 72px;
+    height: 88px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid rgba(255,255,255,0.3);
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+  }
+
+  .id-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .id-info { flex: 1; }
+
+  .id-name {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 12px;
+  }
+
+  .id-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 6px;
+  }
+
+  .id-field { }
+
+  .id-field-label {
+    font-size: 9px;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+
+  .id-field-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.95);
+  }
+
+  .id-card-bottom {
+    position: relative;
+    z-index: 1;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .id-number {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 1px;
+  }
+
+  .id-status-badge {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .id-status-badge.banned {
+    background: rgba(229,62,62,0.3);
+    border-color: rgba(229,62,62,0.5);
+  }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── CARDS ── */
+  .info-card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 18px;
+    box-shadow: var(--shadow);
+    margin-bottom: 14px;
+    border: 1px solid var(--border);
+  }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--bg2);
+  }
+
+  .info-row:last-child { border-bottom: none; }
+
+  .info-row-label {
+    font-size: 12px;
+    color: var(--text2);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  .info-row-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    text-align: right;
+    max-width: 60%;
+    word-break: break-word;
+  }
+
+  /* ── REPORTS ── */
+  .report-card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+    margin-bottom: 12px;
+    border-left: 4px solid var(--accent);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+  }
+
+  .report-card.unread {
+    border-left-color: var(--ua-yellow);
+    background: #FFFDF0;
+  }
+
+  .report-type {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .report-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .report-body {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.5;
+    margin-bottom: 8px;
+  }
+
+  .report-date {
+    font-size: 11px;
+    color: #A0AEC0;
+  }
+
+  /* ── COURT ── */
+  .court-card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+  }
+
+  .court-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .court-status.pending { background: #EBF8FF; color: #2B6CB0; }
+  .court-status.approved { background: #F0FFF4; color: #276749; }
+  .court-status.rejected { background: #FFF5F5; color: #C53030; }
+
+  .court-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .court-sub {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.4;
+    margin-bottom: 8px;
+  }
+
+  .court-meta {
+    font-size: 11px;
+    color: #A0AEC0;
+  }
+
+  /* ── MODAL ── */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 200;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .modal-sheet {
+    background: white;
+    border-radius: 24px 24px 0 0;
+    padding: 24px 20px 40px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUp 0.3s ease;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  .modal-handle {
+    width: 40px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 20px;
+  }
+
+  .modal-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 20px;
+  }
+
+  .textarea-field {
+    width: 100%;
+    padding: 13px 16px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: 'Raleway', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    resize: vertical;
+    min-height: 100px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .textarea-field:focus {
+    border-color: var(--accent);
+    background: white;
+  }
+
+  .btn-secondary {
+    width: 100%;
+    padding: 14px;
+    background: var(--bg2);
+    color: var(--text);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Raleway', sans-serif;
+    margin-top: 10px;
+  }
+
+  /* ── ADMIN ── */
+  .admin-badge {
+    background: linear-gradient(135deg, #744210, #D69E2E);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  .admin-user-card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: box-shadow 0.2s;
+  }
+
+  .admin-user-card:hover { box-shadow: var(--shadow-lg); }
+
+  .user-mini-photo {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--bg2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 2px solid var(--border);
+  }
+
+  .user-mini-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .btn-danger {
+    padding: 10px 16px;
+    background: var(--danger);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Raleway', sans-serif;
+    transition: opacity 0.2s;
+  }
+
+  .btn-danger:hover { opacity: 0.85; }
+
+  .btn-success {
+    padding: 10px 16px;
+    background: var(--success);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Raleway', sans-serif;
+  }
+
+  .btn-outline {
+    padding: 10px 16px;
+    background: transparent;
+    color: var(--accent);
+    border: 2px solid var(--accent);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Raleway', sans-serif;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text2);
+  }
+
+  .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state-text { font-size: 14px; line-height: 1.5; }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 60px auto;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .fab {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #003F8A, #005BBB);
+    color: white;
+    font-size: 26px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0,91,187,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99;
+    transition: transform 0.2s;
+  }
+
+  .fab:hover { transform: scale(1.08); }
+
+  .select-field {
+    width: 100%;
+    padding: 13px 16px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-family: 'Raleway', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    appearance: none;
+  }
+
+  .court-admin-btns {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    background: var(--bg2);
+    color: var(--text2);
+    margin-right: 6px;
+    margin-bottom: 4px;
+  }
+
+  .history-card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+  }
+
+  .notif-dot {
+    width: 8px;
+    height: 8px;
+    background: #E53E3E;
+    border-radius: 50%;
+    position: absolute;
+    top: 4px;
+    right: 8px;
+  }
+`;
+
+// ══════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════
+function generateId() {
+  return Math.random().toString(36).slice(2, 10).toUpperCase();
+}
+
+function formatDate(ts) {
+  if (!ts) return "—";
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString("uk-UA", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+// ══════════════════════════════════════════
+//  COMPONENTS
+// ══════════════════════════════════════════
+
+function IDCard({ profile, isAdmin }) {
+  const initials = profile.firstName && profile.lastName
+    ? `${profile.firstName[0]}${profile.lastName[0]}`
+    : "👤";
+
+  return (
+    <div className="id-card">
+      <div className="id-card-header">
+        <div className="id-flag">
+          <div className="id-flag-top" />
+          <div className="id-flag-bottom" />
+        </div>
+        <div>
+          <div className="id-card-app-name">НікусДія</div>
+          <div className="id-card-doc-type">Учнівський документ</div>
+        </div>
+        {isAdmin && <span className="admin-badge" style={{ marginLeft: "auto" }}>СУДДЯ</span>}
+      </div>
+      <div className="id-card-body">
+        <div className="id-photo">
+          {profile.photoUrl
+            ? <img src={profile.photoUrl} alt="фото" />
+            : <span>{initials}</span>}
+        </div>
+        <div className="id-info">
+          <div className="id-name">{profile.lastName}<br />{profile.firstName}</div>
+          <div className="id-row">
+            <div className="id-field">
+              <div className="id-field-label">Клас</div>
+              <div className="id-field-value">{profile.grade || "—"}</div>
+            </div>
+            <div className="id-field">
+              <div className="id-field-label">Контакт</div>
+              <div className="id-field-value" style={{ fontSize: 12 }}>{profile.contact || "—"}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="id-card-bottom">
+        <div className="id-number">ID: {profile.uid?.slice(0, 8).toUpperCase()}</div>
+        <div className={`id-status-badge${profile.banned ? " banned" : ""}`}>
+          {profile.banned ? "⛔ Заблоковано" : "✓ Активний"}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────
+//  AUTH PAGE
+// ──────────────────────────────────────────
+function AuthPage({ onAuth }) {
+  const [tab, setTab] = useState("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit() {
+    setError("");
+    setLoading(true);
+    try {
+      if (tab === "login") {
+        await signInWithEmailAndPassword(auth, email, password);
+      } else {
+        await createUserWithEmailAndPassword(auth, email, password);
+      }
+    } catch (e) {
+      const msgs = {
+        "auth/user-not-found": "Користувача не знайдено",
+        "auth/wrong-password": "Невірний пароль",
+        "auth/email-already-in-use": "Email вже використовується",
+        "auth/weak-password": "Пароль занадто короткий",
+        "auth/invalid-email": "Невірний формат email",
+        "auth/invalid-credential": "Невірний email або пароль",
+      };
+      setError(msgs[e.code] || e.message);
+    }
+    setLoading(false);
+  }
+
+  async function handleGoogle() {
+    setError("");
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
+  return (
+    <div className="auth-page">
+      <div className="auth-logo-big">НД</div>
+      <div className="auth-title-big">НікусДія</div>
+      <div className="auth-subtitle">Цифровий учнівський документ</div>
+      <div className="auth-card">
+        <div className="auth-tabs">
+          <button className={`auth-tab${tab === "login" ? " active" : ""}`} onClick={() => setTab("login")}>Вхід</button>
+          <button className={`auth-tab${tab === "register" ? " active" : ""}`} onClick={() => setTab("register")}>Реєстрація</button>
+        </div>
+        {error && <div className="error-msg">{error}</div>}
+        <div className="input-group">
+          <div className="input-label">Email</div>
+          <input className="input-field" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" />
+        </div>
+        <div className="input-group">
+          <div className="input-label">Пароль</div>
+          <input className="input-field" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" onKeyDown={e => e.key === "Enter" && handleSubmit()} />
+        </div>
+        <button className="btn-primary" onClick={handleSubmit} disabled={loading}>
+          {loading ? "Завантаження…" : tab === "login" ? "Увійти" : "Зареєструватися"}
+        </button>
+        <div className="divider">або</div>
+        <button className="btn-google" onClick={handleGoogle}>
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.29-8.16 2.29-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          Увійти через Google
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────
+//  PROFILE SETUP
+// ──────────────────────────────────────────
+function ProfileSetup({ user, onDone }) {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [contact, setContact] = useState("");
+  const [grade, setGrade] = useState("");
+  const [photoUrl, setPhotoUrl] = useState("");
+  const [loading, setLoading] = useState(false);
+  const fileRef = useRef();
+
+  function handlePhoto(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => setPhotoUrl(ev.target.result);
+    reader.readAsDataURL(file);
+  }
+
+  async function handleSubmit() {
+    if (!firstName || !lastName || !grade) return alert("Заповніть всі обов'язкові поля");
+    setLoading(true);
+    const uid = user.uid;
+    await setDoc(doc(db, "users", uid), {
+      uid,
+      email: user.email,
+      firstName,
+      lastName,
+      contact,
+      grade,
+      photoUrl,
+      banned: false,
+      createdAt: serverTimestamp(),
+    });
+    onDone();
+  }
+
+  return (
+    <div style={{ background: "var(--bg)", minHeight: "100vh", paddingBottom: 40 }}>
+      <div style={{ background: "linear-gradient(135deg, #003F8A, #005BBB)", padding: "24px 20px 20px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div className="auth-logo-big" style={{ width: 40, height: 40, fontSize: 14, marginBottom: 0 }}>НД</div>
+          <div>
+            <div style={{ fontFamily: "'Unbounded',sans-serif", fontSize: 18, fontWeight: 700, color: "white" }}>НікусДія</div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>Заповніть анкету</div>
+          </div>
+        </div>
+      </div>
+      <div className="setup-page">
+        <div className="setup-title">Ваш профіль</div>
+        <div className="setup-sub">Ці дані будуть відображені на вашому учнівському документі</div>
+
+        <div className="photo-upload">
+          <div className="photo-circle" onClick={() => fileRef.current.click()}>
+            {photoUrl ? <img src={photoUrl} alt="фото" /> : <span style={{ fontSize: 32 }}>📷</span>}
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handlePhoto} />
+          <div className="photo-hint">Натисніть, щоб завантажити фото обличчя</div>
+        </div>
+
+        <div className="input-group">
+          <div className="input-label">Ім'я *</div>
+          <input className="input-field" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Микита" />
+        </div>
+        <div className="input-group">
+          <div className="input-label">Прізвище *</div>
+          <input className="input-field" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Іваненко" />
+        </div>
+        <div className="input-group">
+          <div className="input-label">Телефон або Telegram *</div>
+          <input className="input-field" value={contact} onChange={e => setContact(e.target.value)} placeholder="+380... або @username" />
+        </div>
+        <div className="input-group">
+          <div className="input-label">Клас *</div>
+          <select className="select-field" value={grade} onChange={e => setGrade(e.target.value)}>
+            <option value="">Оберіть клас</option>
+            {Array.from({ length: 11 }, (_, i) => i + 1).map(n => (
+              <option key={n} value={`${n} клас`}>{n} клас</option>
+            ))}
+          </select>
+        </div>
+
+        <button className="btn-primary" onClick={handleSubmit} disabled={loading} style={{ marginTop: 8 }}>
+          {loading ? "Збереження…" : "Зберегти та продовжити →"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────
+//  CABINET TAB
+// ──────────────────────────────────────────
+function CabinetTab({ profile, isAdmin }) {
+  return (
+    <div className="page-content">
+      <IDCard profile={profile} isAdmin={isAdmin} />
+      <div className="section-title">📋 Особисті дані</div>
+      <div className="info-card">
+        <div className="info-row">
+          <div className="info-row-label">Email</div>
+          <div className="info-row-value">{profile.email}</div>
+        </div>
+        <div className="info-row">
+          <div className="info-row-label">Ім'я</div>
+          <div className="info-row-value">{profile.firstName}</div>
+        </div>
+        <div className="info-row">
+          <div className="info-row-label">Прізвище</div>
+          <div className="info-row-value">{profile.lastName}</div>
+        </div>
+        <div className="info-row">
+          <div className="info-row-label">Клас</div>
+          <div className="info-row-value">{profile.grade}</div>
+        </div>
+        <div className="info-row">
+          <div className="info-row-label">Контакт</div>
+          <div className="info-row-value">{profile.contact}</div>
+        </div>
+        <div className="info-row">
+          <div className="info-row-label">Дата реєстрації</div>
+          <div className="info-row-value">{formatDate(profile.createdAt)}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────
+//  REPORTS TAB
+// ──────────────────────────────────────────
+function ReportsTab({ userId }) {
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const q = query(collection(db, "reports"), where("userId", "==", userId), orderBy("createdAt", "desc"));
+    const unsub = onSnapshot(q, snap => {
+      setReports(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setLoading(false);
+    });
+    return unsub;
+  }, [userId]);
+
+  if (loading) return <div className="spinner" />;
+
+  return (
+    <div className="page-content">
+      <div className="section-title">📢 Повідомлення від НікусДії</div>
+      {reports.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-state-icon">📭</div>
+          <div className="empty-state-text">Повідомлень поки немає.<br />Тут з'являтимуться звіти та офіційні повідомлення.</div>
+        </div>
+      ) : reports.map(r => (
+        <div key={r.id} className={`report-card${!r.read ? " unread" : ""}`}>
+          <div className="report-type">{r.type || "Повідомлення"}</div>
+          <div className="report-title">{r.title}</div>
+          <div className="report-body">{r.body}</div>
+          <div className="report-date">{formatDate(r.createdAt)}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────
+//  COURT TAB
+// ──────────────────────────────────────────
+function CourtTab({ userId, profile }) {
+  const [cases, setCases] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [accused, setAccused] = useState("");
+  const [crimeType, setCrimeType] = useState("");
+  const [description, setDescription] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const q = query(collection(db, "court"), where("plaintiffId", "==", userId), orderBy("createdAt", "desc"));
+    const unsub = onSnapshot(q, snap => {
+      setCases(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setLoading(false);
+    });
+    return unsub;
+  }, [userId]);
+
+  async function submitCase() {
+    if (!accused || !crimeType || !description) return alert("Заповніть всі поля");
+    setSubmitting(true);
+    await addDoc(collection(db, "court"), {
+      plaintiffId: userId,
+      plaintiffName: `${profile.firstName} ${profile.lastName}`,
+      accused,
+      crimeType,
+      description,
+      status: "pending",
+      createdAt: serverTimestamp(),
+    });
+    setSubmitting(false);
+    setShowModal(false);
+    setAccused(""); setCrimeType(""); setDescription("");
+  }
+
+  const statusLabel = { pending: "🔵 Розглядається", approved: "✅ Підтримано", rejected: "❌ Відхилено" };
+
+  if (loading) return <div className="spinner" />;
+
+  return (
+    <div className="page-content">
+      <div className="section-title">⚖️ Мої заяви до суду</div>
+      {cases.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-state-icon">⚖️</div>
+          <div className="empty-state-text">Ви ще не подавали заяв.<br />Натисніть + щоб подати нову.</div>
+        </div>
+      ) : cases.map(c => (
+        <div key={c.id} className="court-card">
+          <div className={`court-status ${c.status}`}>{statusLabel[c.status] || c.status}</div>
+          <div className="court-title">Проти: {c.accused}</div>
+          <div className="court-sub">{c.crimeType}</div>
+          <div className="court-sub" style={{ color: "var(--text2)" }}>{c.description}</div>
+          <div className="court-meta">Подано: {formatDate(c.createdAt)}</div>
+          {c.adminNote && (
+            <div style={{ marginTop: 10, padding: "8px 12px", background: "var(--bg2)", borderRadius: 8, fontSize: 13, color: "var(--text2)" }}>
+              💬 Суддя: {c.adminNote}
+            </div>
+          )}
+        </div>
+      ))}
+
+      <button className="fab" onClick={() => setShowModal(true)}>+</button>
+
+      {showModal && (
+        <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
+          <div className="modal-sheet">
+            <div className="modal-handle" />
+            <div className="modal-title">⚖️ Нова судова заява</div>
+            <div className="input-group">
+              <div className="input-label">Ім'я звинуваченого</div>
+              <input className="input-field" value={accused} onChange={e => setAccused(e.target.value)} placeholder="Ім'я та прізвище / нікнейм" />
+            </div>
+            <div className="input-group">
+              <div className="input-label">Тип порушення</div>
+              <select className="select-field" value={crimeType} onChange={e => setCrimeType(e.target.value)}>
+                <option value="">Оберіть тип</option>
+                <option>Порушення правил гри</option>
+                <option>Образа / цькування</option>
+                <option>Шахрайство</option>
+                <option>Крадіжка</option>
+                <option>Спам</option>
+                <option>Інше</option>
+              </select>
+            </div>
+            <div className="input-group">
+              <div className="input-label">Опис ситуації</div>
+              <textarea className="textarea-field" value={description} onChange={e => setDescription(e.target.value)} placeholder="Детально опишіть що сталося..." />
+            </div>
+            <button className="btn-primary" onClick={submitCase} disabled={submitting}>
+              {submitting ? "Надсилання…" : "Подати заяву"}
+            </button>
+            <button className="btn-secondary" onClick={() => setShowModal(false)}>Скасувати</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────
+//  HISTORY TAB
+// ──────────────────────────────────────────
+function HistoryTab({ userId }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const q = query(collection(db, "court"), where("plaintiffId", "==", userId), orderBy("createdAt", "desc"));
+    const unsub = onSnapshot(q, snap => {
+      setItems(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setLoading(false);
+    });
+    return unsub;
+  }, [userId]);
+
+  if (loading) return <div className="spinner" />;
+
+  const statusColor = { pending: "#2B6CB0", approved: "#276749", rejected: "#C53030" };
+  const statusLabel = { pending: "Розглядається", approved: "Підтримано", rejected: "Відхилено" };
+
+  return (
+    <div className="page-content">
+      <div className="section-title">📜 Історія справ</div>
+      {items.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-state-icon">📜</div>
+          <div className="empty-state-text">Справ поки немає.</div>
+        </div>
+      ) : items.map(item => (
+        <div key={item.id} className="history-card">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>Проти: {item.accused}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: statusColor[item.status] }}>{statusLabel[item.status]}</div>
+          </div>
+          <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 4 }}>{item.crimeType}</div>
+          <div style={{ fontSize: 11, color: "#A0AEC0" }}>{formatDate(item.createdAt)}</div>
+          {item.adminNote && (
+            <div style={{ marginTop: 8, padding: "6px 10px", background: "var(--bg2)", borderRadius: 6, fontSize: 12, color: "var(--text2)" }}>
+              💬 {item.adminNote}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────
+//  ADMIN PANEL
+// ──────────────────────────────────────────
+function AdminPanel({ adminProfile }) {
+  const [activeAdminTab, setActiveAdminTab] = useState("users");
+  const [users, setUsers] = useState([]);
+  const [courtCases, setCourtCases] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [editData, setEditData] = useState({});
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportTarget, setReportTarget] = useState(null);
+  const [reportTitle, setReportTitle] = useState("");
+  const [reportBody, setReportBody] = useState("");
+  const [reportType, setReportType] = useState("Повідомлення");
+  const [caseNote, setCaseNote] = useState("");
+  const [selectedCase, setSelectedCase] = useState(null);
+
+  useEffect(() => {
+    const unsub1 = onSnapshot(collection(db, "users"), snap => {
+      setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setLoading(false);
+    });
+    const q2 = query(collection(db, "court"), orderBy("createdAt", "desc"));
+    const unsub2 = onSnapshot(q2, snap => {
+      setCourtCases(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return () => { unsub1(); unsub2(); };
+  }, []);
+
+  async function toggleBan(user) {
+    await updateDoc(doc(db, "users", user.uid), { banned: !user.banned });
+  }
+
+  async function saveEdit() {
+    await updateDoc(doc(db, "users", selectedUser.uid), editData);
+    setEditMode(false);
+    setSelectedUser({ ...selectedUser, ...editData });
+  }
+
+  async function sendReport() {
+    if (!reportTitle || !reportBody) return alert("Заповніть поля");
+    await addDoc(collection(db, "reports"), {
+      userId: reportTarget.uid,
+      title: reportTitle,
+      body: reportBody,
+      type: reportType,
+      read: false,
+      createdAt: serverTimestamp(),
+    });
+    setShowReportModal(false);
+    setReportTitle(""); setReportBody("");
+  }
+
+  async function resolveCase(caseId, status) {
+    await updateDoc(doc(db, "court", caseId), { status, adminNote: caseNote });
+    setSelectedCase(null); setCaseNote("");
+  }
+
+  if (loading) return <div className="spinner" />;
+
+  return (
+    <div style={{ background: "var(--bg)", minHeight: "100vh" }}>
+      <div className="header">
+        <div className="header-logo">НД</div>
+        <div>
+          <div className="header-title">НікусДія</div>
+          <div className="header-sub">Панель судді</div>
+        </div>
+        <span className="admin-badge" style={{ marginLeft: "auto" }}>⚖️ СУДДЯ</span>
+        <button className="header-logout" style={{ marginLeft: 10 }} onClick={() => signOut(auth)}>Вийти</button>
+      </div>
+
+      <div style={{ display: "flex", borderBottom: "2px solid var(--border)", background: "white" }}>
+        {[["users", "👥 Учні"], ["court", "⚖️ Суд"]].map(([k, v]) => (
+          <button key={k} onClick={() => setActiveAdminTab(k)} style={{
+            flex: 1, padding: "14px 8px", border: "none", background: "transparent",
+            fontFamily: "'Raleway',sans-serif", fontWeight: 700, fontSize: 13,
+            cursor: "pointer", color: activeAdminTab === k ? "var(--accent)" : "var(--text2)",
+            borderBottom: activeAdminTab === k ? "3px solid var(--accent)" : "3px solid transparent",
+            transition: "all 0.2s",
+          }}>{v}</button>
+        ))}
+      </div>
+
+      <div className="page-content" style={{ paddingBottom: 40 }}>
+        {activeAdminTab === "users" && (
+          <>
+            <div className="section-title">👥 Всі учні ({users.length})</div>
+            {users.map(u => (
+              <div key={u.uid} className="admin-user-card" onClick={() => { setSelectedUser(u); setEditData({ firstName: u.firstName, lastName: u.lastName, grade: u.grade, contact: u.contact }); }}>
+                <div className="user-mini-photo">
+                  {u.photoUrl ? <img src={u.photoUrl} alt="" /> : <span>{(u.firstName?.[0] || "") + (u.lastName?.[0] || "")}</span>}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{u.firstName} {u.lastName}</div>
+                  <div style={{ fontSize: 12, color: "var(--text2)" }}>{u.grade} · {u.email}</div>
+                </div>
+                {u.banned && <span style={{ fontSize: 11, color: "var(--danger)", fontWeight: 700 }}>БАН</span>}
+              </div>
+            ))}
+          </>
+        )}
+
+        {activeAdminTab === "court" && (
+          <>
+            <div className="section-title">⚖️ Судові справи ({courtCases.length})</div>
+            {courtCases.length === 0 ? (
+              <div className="empty-state"><div className="empty-state-icon">⚖️</div><div className="empty-state-text">Справ поки немає</div></div>
+            ) : courtCases.map(c => (
+              <div key={c.id} className="court-card">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    <div className={`court-status ${c.status}`}>{c.status === "pending" ? "🔵 Розглядається" : c.status === "approved" ? "✅ Підтримано" : "❌ Відхилено"}</div>
+                    <div className="court-title">Позивач: {c.plaintiffName}</div>
+                    <div className="court-sub">Проти: <b>{c.accused}</b></div>
+                    <div className="court-sub">{c.crimeType}</div>
+                    <div className="court-sub" style={{ fontSize: 12 }}>{c.description}</div>
+                    <div className="court-meta">{formatDate(c.createdAt)}</div>
+                  </div>
+                </div>
+                {c.status === "pending" && (
+                  <div style={{ marginTop: 10 }}>
+                    <textarea className="textarea-field" style={{ minHeight: 60, fontSize: 13 }} placeholder="Коментар судді (необов'язково)..." value={selectedCase === c.id ? caseNote : ""} onChange={e => { setSelectedCase(c.id); setCaseNote(e.target.value); }} onClick={() => setSelectedCase(c.id)} />
+                    <div className="court-admin-btns">
+                      <button className="btn-success" onClick={() => resolveCase(c.id, "approved")}>✅ Підтримати</button>
+                      <button className="btn-danger" onClick={() => resolveCase(c.id, "rejected")}>❌ Відхилити</button>
+                    </div>
+                  </div>
+                )}
+                {c.adminNote && (
+                  <div style={{ marginTop: 8, padding: "8px 12px", background: "var(--bg2)", borderRadius: 8, fontSize: 13 }}>
+                    💬 {c.adminNote}
+                  </div>
+                )}
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+
+      {/* User detail modal */}
+      {selectedUser && (
+        <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && setSelectedUser(null)}>
+          <div className="modal-sheet">
+            <div className="modal-handle" />
+            <IDCard profile={selectedUser} isAdmin={false} />
+            {editMode ? (
+              <>
+                <div className="input-group"><div className="input-label">Ім'я</div><input className="input-field" value={editData.firstName} onChange={e => setEditData({ ...editData, firstName: e.target.value })} /></div>
+                <div className="input-group"><div className="input-label">Прізвище</div><input className="input-field" value={editData.lastName} onChange={e => setEditData({ ...editData, lastName: e.target.value })} /></div>
+                <div className="input-group"><div className="input-label">Клас</div><input className="input-field" value={editData.grade} onChange={e => setEditData({ ...editData, grade: e.target.value })} /></div>
+                <div className="input-group"><div className="input-label">Контакт</div><input className="input-field" value={editData.contact} onChange={e => setEditData({ ...editData, contact: e.target.value })} /></div>
+                <button className="btn-primary" onClick={saveEdit}>💾 Зберегти</button>
+                <button className="btn-secondary" onClick={() => setEditMode(false)}>Скасувати</button>
+              </>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
+                <button className="btn-outline" onClick={() => setEditMode(true)}>✏️ Редагувати дані</button>
+                <button className={selectedUser.banned ? "btn-success" : "btn-danger"} onClick={() => { toggleBan(selectedUser); setSelectedUser({ ...selectedUser, banned: !selectedUser.banned }); }}>
+                  {selectedUser.banned ? "✅ Розблокувати" : "⛔ Заблокувати"}
+                </button>
+                <button className="btn-outline" onClick={() => { setReportTarget(selectedUser); setShowReportModal(true); }}>📢 Надіслати повідомлення</button>
+                <button className="btn-secondary" onClick={() => setSelectedUser(null)}>Закрити</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Send report modal */}
+      {showReportModal && (
+        <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && setShowReportModal(false)}>
+          <div className="modal-sheet">
+            <div className="modal-handle" />
+            <div className="modal-title">📢 Повідомлення для {reportTarget?.firstName}</div>
+            <div className="input-group">
+              <div className="input-label">Тип</div>
+              <select className="select-field" value={reportType} onChange={e => setReportType(e.target.value)}>
+                <option>Повідомлення</option><option>Попередження</option><option>Звіт</option><option>Рішення суду</option>
+              </select>
+            </div>
+            <div className="input-group">
+              <div className="input-label">Заголовок</div>
+              <input className="input-field" value={reportTitle} onChange={e => setReportTitle(e.target.value)} placeholder="Заголовок повідомлення" />
+            </div>
+            <div className="input-group">
+              <div className="input-label">Текст</div>
+              <textarea className="textarea-field" value={reportBody} onChange={e => setReportBody(e.target.value)} placeholder="Текст повідомлення..." />
+            </div>
+            <button className="btn-primary" onClick={sendReport}>Надіслати</button>
+            <button className="btn-secondary" onClick={() => setShowReportModal(false)}>Скасувати</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────
+//  MAIN APP
+// ──────────────────────────────────────────
+export default function NikusDiya() {
+  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
+  const [tab, setTab] = useState("cabinet");
+  const [unreadReports, setUnreadReports] = useState(0);
+
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.textContent = css;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async u => {
+      setUser(u);
+      if (u) {
+        const snap = await getDoc(doc(db, "users", u.uid));
+        if (snap.exists()) setProfile(snap.data());
+        else setProfile(null);
+      } else {
+        setProfile(null);
+      }
+      setLoadingAuth(false);
+    });
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (!user || !profile) return;
+    const q = query(collection(db, "reports"), where("userId", "==", user.uid), where("read", "==", false));
+    const unsub = onSnapshot(q, snap => setUnreadReports(snap.size));
+    return unsub;
+  }, [user, profile]);
+
+  if (loadingAuth) return <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}><div className="spinner" /></div>;
+  if (!user) return <AuthPage />;
+
+  const isAdmin = user.email === ADMIN_EMAIL;
+
+  if (isAdmin) return <AdminPanel adminProfile={profile || { uid: user.uid, email: user.email }} />;
+  if (!profile) return <ProfileSetup user={user} onDone={async () => {
+    const snap = await getDoc(doc(db, "users", user.uid));
+    if (snap.exists()) setProfile(snap.data());
+  }} />;
+
+  if (profile.banned) return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: 32, background: "var(--bg)", gap: 16 }}>
+      <div style={{ fontSize: 64 }}>⛔</div>
+      <div style={{ fontFamily: "'Unbounded',sans-serif", fontSize: 20, fontWeight: 800, color: "var(--danger)", textAlign: "center" }}>Акаунт заблоковано</div>
+      <div style={{ fontSize: 14, color: "var(--text2)", textAlign: "center" }}>Ваш акаунт було заблоковано суддею НікусДії.</div>
+      <button className="btn-secondary" style={{ width: "auto", padding: "12px 24px" }} onClick={() => signOut(auth)}>Вийти</button>
+    </div>
+  );
+
+  const navItems = [
+    { key: "cabinet", icon: "🪪", label: "Кабінет" },
+    { key: "reports", icon: "📢", label: "Звіти", badge: unreadReports },
+    { key: "court", icon: "⚖️", label: "Суд" },
+    { key: "history", icon: "📜", label: "Історія" },
+  ];
+
+  return (
+    <div className="app-wrap">
+      <div className="header">
+        <div className="header-logo">НД</div>
+        <div>
+          <div className="header-title">НікусДія</div>
+          <div className="header-sub">Цифровий учнівський документ</div>
+        </div>
+        <button className="header-logout" onClick={() => signOut(auth)}>Вийти</button>
+      </div>
+
+      {tab === "cabinet" && <CabinetTab profile={profile} isAdmin={isAdmin} />}
+      {tab === "reports" && <ReportsTab userId={user.uid} />}
+      {tab === "court" && <CourtTab userId={user.uid} profile={profile} />}
+      {tab === "history" && <HistoryTab userId={user.uid} />}
+
+      <div className="bottom-nav">
+        {navItems.map(n => (
+          <button key={n.key} className={`nav-item${tab === n.key ? " active" : ""}`} onClick={() => setTab(n.key)} style={{ position: "relative" }}>
+            <span className="nav-icon">{n.icon}</span>
+            <span>{n.label}</span>
+            {n.badge > 0 && <div className="notif-dot" />}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
